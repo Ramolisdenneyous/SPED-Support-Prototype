@@ -1,0 +1,494 @@
+﻿# SPED Support Swarm — Pilot / Demonstration Prototype Build Brief
+
+
+## Purpose
+
+
+Build a working pilot demonstration prototype for an AI-assisted SPED classroom support system.
+
+
+This prototype is intended for presentation to school administrators, district IT, SPED leadership, and potentially a school board. It should demonstrate the core product concept without using real student data.
+
+
+The system should show how a teacher-facing dashboard could monitor student engagement, assignment progress, and support needs across a classroom using simulated student data.
+
+
+The prototype must be designed so it can later integrate with Google Classroom, Google Workspace Admin APIs, Chrome Management APIs, and Gemini/Gemini Gems, but the first version should run entirely from artificial demo data.
+
+
+---
+
+
+## Core Concept
+
+
+The app has two student-side systems that both report to the teacher:
+
+
+### 1. Monitoring Minder System (prototype goal)
+
+
+This system passively observes simulated student status data.
+
+
+It does not tutor students.
+
+
+Its job is to:
+- monitor task progress
+- identify confusion
+- detect off-task behavior
+- detect possible disengagement
+- flag students who may need help
+- send compact status updates to the teacher dashboard
+
+
+### 2. Tutor / Accommodation Agent System (MK2 Goal)
+
+
+This system represents a future student-facing AI tutor.
+
+
+In the prototype, this may be simulated rather than fully implemented.
+
+
+Its job is to eventually:
+- provide assignment help
+- chunk tasks
+- support reading accommodations
+- provide executive-function support
+- avoid answer dumping
+- follow student-specific accommodation rules
+
+
+For the first demonstration prototype, tutoring should be represented as a separate subsystem from monitoring.
+
+
+The monitoring system watches behavior.
+The tutor system interacts with students.
+Both send useful information to the teacher.
+
+
+Do not merge these systems. (although for the prototype we will attempt to offload some of these tasks to the Teacher side AI tool) 
+
+
+---
+
+
+## Technical Architecture
+
+
+Build the system as a Docker-based multi-service app suitable for Railway deployment.
+
+
+Recommended services:
+
+
+```text
+frontend        React / TypeScript teacher dashboard
+backend         FastAPI orchestration API
+postgres        PostgreSQL database
+simulator       Fake student data + minder heartbeat service
+________________
+
+
+Frontend Requirements
+Build a teacher-facing dashboard optimized for tablet display in Chrome.
+The dashboard should show a classroom of 10 simulated students.
+Preferred visual metaphor:
+* isometric classroom or top-down classroom
+* each student represented by a small “minder” avatar
+* students themselves do not need to be visually displayed
+* minder avatar state communicates student status at a glance
+Each minder should have a visible state such as:
+* Working
+* Confused
+* Idle
+* Researching
+* Off Task
+* Using Accommodation
+* Needs Help
+* Escalation Recommended
+The teacher should be able to click or tap a student/minder and open a detail panel showing:
+* current status
+* recent activity
+* assignment progress (with a full list of current assignments) 
+* confusion level
+* engagement level
+* Approved accommodation (clicking these will give implementation options) 
+* minder summary
+* tutor summary placeholder
+* recent simulated events
+The teacher dashboard should update live without requiring page refresh.
+Use WebSockets or server-sent events if appropriate. Polling is acceptable for the first prototype if simpler.
+________________
+
+
+Backend Requirements
+The FastAPI backend should act as the source of truth for:
+* students
+* simulated assignments
+* minder states
+* event logs
+* dashboard summaries
+* alert state
+* teacher-facing status payloads
+The backend should expose REST endpoints for:
+GET /health
+GET /students
+GET /students/{student_id}
+GET /students/{student_id}/events
+GET /dashboard/state
+POST /simulator/tick
+POST /simulator/reset
+
+
+
+
+Optional real-time endpoint:
+WS /dashboard/live
+The backend should store state in PostgreSQL.
+Use SQLAlchemy or SQLModel if helpful.
+
+
+We must try to keep active states in the backend as much as possible, Ideally the fron’t end will be stateless, and only report the current states read from the back end.
+
+
+Make sure to build logs for everything that could break, as we will be primarily using logs to troubleshoot issues as we build. 
+________________
+Simulator Service
+Create a separate simulator service responsible for generating artificial student behavior.
+The simulator should create 10 fake students.
+Each student should have a unique behavior profile with different distributions.
+Use 3d6-style rolls to create roughly normal behavior distributions.
+Example student profiles:
+{
+  "student_id": "demo_01",
+  "display_name": "Student 01",
+  "profile_type": "steady_worker",
+  "focus_baseline": 13,
+  "confusion_baseline": 8,
+  "help_seeking": 10,
+  "off_task_tendency": 6,
+  "reading_support_needed": false,
+  "executive_function_support": true
+}
+
+
+Create at least 10 profile archetypes:
+1. Steady worker
+2. High achiever but low help-seeking
+3. Easily confused but persistent
+4. Frequent task-switcher
+5. Strong reader, poor task completion
+6. Dyslexia support profile
+7. Executive-function support profile
+8. Anxiety/frustration spike profile
+9. Off-task / gaming tendency
+10. Quietly stalled student
+Each simulator heartbeat should:
+* roll 3d6 per student (this gives us a normal distribution
+* Most likely actions clustered in the center (for example, working on a roll of 10 or 11)
+* Escalation Recommended should be rare, place it on a roll of 18 only.
+* apply student-specific modifiers
+* update status
+* generate event logs
+* produce a minder summary
+* create alert flags when thresholds are crossed
+Heartbeat interval: (students are staggered, and rotate alphabetically, with 10 students at 50sec we have one student check in every 5sec).
+* configurable by environment variable
+* default: 50 sec seconds for demo mode
+Do not call an AI model once per student per minute in the first version. In fact we may not have the minder agents sending active updates, just updating the local status when events occur so most updates to the teacher are just backend apps communicating with each other.
+Use deterministic/rule-based simulated minder logic first.
+________________
+
+
+Minder Logic (not for demonstration, only simulated) 
+The monitoring minder should evaluate student state from simulated data.
+Inputs:
+* focus score
+* confusion score
+* progress score
+* idle duration
+* help-seeking score
+* off-task score
+* accommodation usage
+* recent events
+Outputs:
+* current student status
+* alert level
+* short teacher-facing summary
+* recommended teacher action
+Example output:
+{
+  "student_id": "demo_04",
+  "status": "confused",
+  "alert_level": "medium",
+  "summary": "Student has made little progress for 8 minutes and confusion is trending upward.",
+  "recommended_action": "Check in and offer task chunking support."
+}
+
+
+Alert levels:
+none
+low
+medium
+high
+urgent
+________________
+
+
+Tutor Agent Placeholder
+Add a separate tutor subsystem placeholder.
+For now, do not build full Gemini/Gems integration.
+Represent tutor data with simulated events such as:
+* student asked for help
+* tutor provided task chunking
+* tutor provided reading support
+* tutor asked a Socratic question
+* tutor refused to provide direct answer
+* tutor escalated to teacher
+Store tutor events separately from monitoring events.
+This separation matters for future architecture.
+Future implementation may connect to:
+* Gemini API
+* Gemini Gems
+* Google Classroom context
+* student accommodation profiles
+* IEP-derived AI behavior rules
+________________
+
+
+Demo Data Model
+Suggested database tables:
+students
+* id
+* display_name
+* profile_type
+* current_status
+* alert_level
+* focus_score
+* confusion_score
+* progress_score
+* off_task_score
+* accommodation_flags
+* created_at
+* updated_at
+assignments
+* id
+* title
+* description
+* due_at
+* simulated_course
+* created_at
+student_assignment_state
+* id
+* student_id
+* assignment_id
+* progress_percent
+* status
+* last_activity_at
+* updated_at
+minder_events
+* id
+* student_id
+* event_type
+* severity
+* message
+* raw_data_json
+* created_at
+tutor_events
+* id
+* student_id
+* event_type
+* severity
+* message
+* raw_data_json
+* created_at
+dashboard_snapshots
+* id
+* snapshot_json
+* created_at
+Future Google Integration Targets
+Do not implement these in the first version unless trivial, but structure the code so these can be added later.
+Google Classroom API
+Future use:
+* courses
+* rosters
+* coursework
+* assignments
+* student submissions
+* grades / feedback if approved
+Google Classroom API supports external tools interacting with Classroom and Google Workspace for Education, including courses, coursework, and student submission resources.
+Google Workspace Admin SDK / Directory API
+Future use:
+* pilot OU inspection
+* user/group lookup
+* student account metadata
+* controlled delegated admin integration
+The Admin SDK Directory API allows administrators to view and manage organizational users, groups, devices, and related resources.
+Chrome Management API
+Future use:
+* Chromebook/browser policy visibility
+* device insights
+* usage/telemetry surfaces
+* managed browser context
+Chrome Management API provides services for viewing, managing, and getting insights about ChromeOS devices and Chrome browsers in an organization.
+Gemini / Gemini Gems
+Future use:
+* student-facing tutor agents
+* accommodation-aware interaction
+* teacher summaries
+* structured intervention recommendations
+Do not depend on Gemini for the core demo heartbeat.
+________________
+
+
+UX / Presentation Goal
+The presentation should make the value obvious in under 60 seconds.
+The administrator should immediately understand:
+“This helps a SPED teacher see which students are working, which are stuck, which are off task, and which need intervention.”
+The dashboard should avoid technical clutter.
+Prioritize:
+* visual clarity
+* fast status recognition
+* simple teacher actions
+* obvious student alert states
+* smooth demo flow
+Suggested presentation flow:
+1. Teacher opens dashboard.
+2. Ten minder avatars are visible.
+3. Most are working.
+4. One student becomes confused.
+5. One student drifts off-task.
+6. One student uses an accommodation successfully.
+7. One student escalates to “Needs Help.”
+8. Teacher taps the student.
+9. Detail panel shows recent events and recommendation.
+10. Teacher sees how this scales classroom awareness.
+________________
+
+
+Important Safety / Messaging Requirements
+The prototype must not imply:
+* autonomous grading
+* disciplinary surveillance
+* replacement of teachers
+* automated IEP decision-making
+* use of real student data
+* uncontrolled AI access for minors
+The prototype should imply:
+* teacher amplification
+* classroom awareness
+* SPED support
+* executive-function support
+* accommodation visibility
+* early intervention
+* human-in-the-loop design
+Use language like:
+teacher-facing support
+guided intervention
+student progress awareness
+accommodation support visibility
+early warning indicators
+teacher-supervised AI assistance
+Avoid language like:
+surveillance
+behavior scoring
+automated discipline
+AI replaces aides
+AI decides accommodations
+________________
+
+
+Development Phases
+Phase 1 — Project Skeleton
+* Create repo structure
+* Add Docker Compose
+* Add frontend service
+* Add backend service
+* Add simulator service
+* Add Postgres service
+* Add environment variable structure
+* Add README with local setup
+Phase 2 — Backend Data Model
+* Implement database schema
+* Add seed data for 10 demo students
+* Add seed assignment
+* Add REST endpoints
+* Add reset endpoint
+Phase 3 — Simulator
+* Implement 3d6 rolling engine
+* Implement student archetypes
+* Implement heartbeat loop
+* Generate status changes
+* Generate minder events
+* Generate tutor placeholder events
+* Write to backend/database
+Phase 4 — Teacher Dashboard UI
+* Build tablet-friendly classroom view
+* Display 10 minder avatars
+* Show live status updates
+* Add detail panel
+* Add alert badges
+* Add event timeline
+Phase 5 — Demo Polish  (we will do a local docker test here)
+* Add “demo mode” controls
+* Add reset simulation button
+* Add speed controls
+* Add scripted demo scenario option
+* Add clean presentation styling
+* Add mock district-safe language in UI
+Phase 6 — Railway Deployment (Push to github) 
+* Prepare deployment configuration
+* Confirm frontend/backend service URLs
+* Configure Postgres
+* Add health checks
+* Verify live demo stability
+Environment Variables
+Suggested:
+DATABASE_URL=
+BACKEND_URL=
+FRONTEND_URL=
+SIM_HEARTBEAT_SECONDS=10
+DEMO_MODE=true
+ENABLE_AI_SUMMARIES=false
+ENABLE_GOOGLE_INTEGRATION=false
+ENABLE_GEMINI_INTEGRATION=false
+________________
+
+
+Success Criteria
+The prototype is successful when:
+* the app runs locally with Docker Compose
+* the app can deploy to Railway
+* the dashboard shows 10 simulated students
+* student statuses update automatically
+* minder events are generated and stored
+* teacher can inspect individual student details
+* alert states are visually obvious
+* no real student data is required
+* Google/Gemini integration points are documented but not required
+* the demo clearly communicates the SPED teacher support concept
+________________
+
+
+Non-Goals For First Prototype
+Do not build these yet:
+* real Google Classroom OAuth integration
+* real student data ingestion
+* real Gemini tutor conversations
+* real IEP storage
+* real Chromebook telemetry
+* grading systems
+* parent communication systems
+* administrative discipline features
+These are future phases after the presentation prototype is stable.
+________________
+
+
+Final Instruction
+Build this as a clean, modular prototype.
+Prioritize demo clarity over architectural perfection.
+The goal is to create a working proof-of-concept that helps administrators understand the vision:
+A teacher-supervised AI support layer that helps SPED teachers monitor classroom progress, identify student needs earlier, and eventually provide safe accommodation-aware tutoring support.
