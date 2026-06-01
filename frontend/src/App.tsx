@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Application,
   Assets,
@@ -10,7 +10,7 @@ import {
   TextStyle,
   Texture,
 } from 'pixi.js'
-import { AlertTriangle, CheckCircle2, HelpCircle, Play, RefreshCw, RotateCcw, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ClipboardList, HelpCircle, LayoutGrid, Play, RefreshCw, RotateCcw, School, ShieldCheck, X } from 'lucide-react'
 import './App.css'
 
 type StudentStatus =
@@ -82,6 +82,8 @@ type SimulatorStatus = {
   last_error: string | null
   lease_expires_at: string | null
 }
+
+type ViewMode = 'classroom' | 'cards'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const sceneWidth = 1536
@@ -214,17 +216,13 @@ const statusZonePriority: Record<StudentStatus, string> = {
 
 function App() {
   const [dashboard, setDashboard] = useState<DashboardState | null>(null)
-  const [selectedId, setSelectedId] = useState('demo_01')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Student | null>(null)
   const [loadingAction, setLoadingAction] = useState('')
   const [error, setError] = useState('')
   const [simulatorStatus, setSimulatorStatus] = useState<SimulatorStatus | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('classroom')
   const simulatorRunningRef = useRef(false)
-
-  const selectedSummary = useMemo(
-    () => selected ?? dashboard?.students.find((student) => student.id === selectedId) ?? dashboard?.students[0] ?? null,
-    [dashboard, selected, selectedId],
-  )
 
   const refreshDashboard = useCallback(async () => {
     try {
@@ -274,6 +272,9 @@ function App() {
       if (result && typeof result === 'object' && 'id' in result && typeof result.id === 'string') {
         setSelectedId(result.id)
         setSelected(result as Student)
+      } else if (label === 'Reset') {
+        setSelectedId(null)
+        setSelected(null)
       }
       await refreshDashboard()
       await refreshSimulatorStatus()
@@ -293,6 +294,11 @@ function App() {
     const isRunning = simulatorStatus?.running ?? false
     await runAction(isRunning ? 'Stop simulator' : 'Start simulator', `${API_URL}/simulator/${isRunning ? 'stop' : 'start'}`)
   }, [runAction, simulatorStatus?.running])
+
+  const clearSelection = useCallback(() => {
+    setSelectedId(null)
+    setSelected(null)
+  }, [])
 
   useEffect(() => {
     const startupTimer = window.setTimeout(() => {
@@ -357,6 +363,31 @@ function App() {
             <p className="eyebrow">Teacher-facing support prototype</p>
             <h1>SPED Support Swarm</h1>
           </div>
+          <div className="view-tabs" role="tablist" aria-label="View style">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'classroom'}
+              className={viewMode === 'classroom' ? 'active-tab' : ''}
+              onClick={() => setViewMode('classroom')}
+            >
+              <School size={16} />
+              Classroom
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'cards'}
+              className={viewMode === 'cards' ? 'active-tab' : ''}
+              onClick={() => {
+                setViewMode('cards')
+                clearSelection()
+              }}
+            >
+              <LayoutGrid size={16} />
+              Cards
+            </button>
+          </div>
           <div className="topbar-actions">
             <div className="summary-strip">
               <SummaryPill icon={<CheckCircle2 />} label="Students" value={dashboard?.summary.student_count ?? 10} />
@@ -388,7 +419,14 @@ function App() {
 
         {error && <div className="error-banner">{error}</div>}
 
-        <ClassroomMap students={dashboard?.students ?? []} selectedId={selectedId} onSelect={loadStudent} />
+        {viewMode === 'classroom'
+          ? <ClassroomMap students={dashboard?.students ?? []} selectedId={selectedId} onSelect={loadStudent} />
+          : <StudentCardsView students={dashboard?.students ?? []} onSelect={(studentId) => {
+              setViewMode('classroom')
+              loadStudent(studentId)
+            }} />}
+
+        {viewMode === 'classroom' && selected && <StudentBubble key={selected.id} student={selected} onClose={clearSelection} />}
 
         <footer className="demo-controls">
           <button type="button" onClick={() => runAction('Tick', `${API_URL}/simulator/tick`, {})} disabled={!!loadingAction}>
@@ -405,7 +443,6 @@ function App() {
         </footer>
       </section>
 
-      <StudentPanel student={selectedSummary} />
     </main>
   )
 }
@@ -420,7 +457,7 @@ function SummaryPill({ icon, label, value, tone = 'default' }: { icon: React.Rea
   )
 }
 
-function ClassroomMap({ students, selectedId, onSelect }: { students: Student[]; selectedId: string; onSelect: (id: string) => void }) {
+function ClassroomMap({ students, selectedId, onSelect }: { students: Student[]; selectedId: string | null; onSelect: (id: string) => void }) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const appRef = useRef<Application | null>(null)
   const spritesRef = useRef<Map<string, Container>>(new Map())
@@ -437,6 +474,8 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
   useEffect(() => {
     let destroyed = false
     const spriteMap = spritesRef.current
+    const motionMap = motionRef.current
+    const assignedSlotsMap = assignedSlotsRef.current
     const setup = async () => {
       if (!hostRef.current || appRef.current) return
       const app = new Application()
@@ -484,13 +523,13 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
         const now = performance.now()
         const active = new Set(studentsRef.current.map((student) => student.id))
         const assignedSlots = assignClassroomSlots(studentsRef.current)
-        const currentAssignments = assignedSlotsRef.current
+        const currentAssignments = assignedSlotsMap
 
         studentsRef.current.forEach((student, index) => {
           const target = assignedSlots.get(student.id) ?? assignedDeskForStudent(student, index)
           const currentTarget = currentAssignments.get(student.id)
           let sprite = spriteMap.get(student.id)
-          let motion = motionRef.current.get(student.id)
+          let motion = motionMap.get(student.id)
 
           if (!sprite) {
             sprite = createMinder(student, agentTextures, () => onSelect(student.id))
@@ -503,7 +542,7 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
 
           if (!motion) {
             motion = createMotionState(assignedDeskForStudent(student, index))
-            motionRef.current.set(student.id, motion)
+            motionMap.set(student.id, motion)
           }
 
           if (!currentTarget || currentTarget[0] !== target[0] || currentTarget[1] !== target[1]) {
@@ -515,7 +554,7 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
           }
 
           if (!movingStudentRef.current) {
-            startNextQueuedMove(moveQueueRef.current, motionRef.current, movingStudentRef, now)
+            startNextQueuedMove(moveQueueRef.current, motionMap, movingStudentRef, now)
           }
 
           if (motion.moving) {
@@ -541,13 +580,13 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
           sprite.y = motion.y + Math.sin(time * 2.5 + index) * 3
         })
         if (!movingStudentRef.current) {
-          startNextQueuedMove(moveQueueRef.current, motionRef.current, movingStudentRef, now)
+          startNextQueuedMove(moveQueueRef.current, motionMap, movingStudentRef, now)
         }
         for (const [id, sprite] of spriteMap) {
           if (!active.has(id)) {
             sprite.destroy({ children: true })
             spriteMap.delete(id)
-            motionRef.current.delete(id)
+            motionMap.delete(id)
             currentAssignments.delete(id)
             moveQueueRef.current = moveQueueRef.current.filter((queuedId) => queuedId !== id)
             if (movingStudentRef.current === id) {
@@ -563,8 +602,8 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
       appRef.current?.destroy(true)
       appRef.current = null
       spriteMap.clear()
-      motionRef.current.clear()
-      assignedSlotsRef.current.clear()
+      motionMap.clear()
+      assignedSlotsMap.clear()
       moveQueueRef.current = []
       movingStudentRef.current = null
     }
@@ -724,16 +763,123 @@ function textureForMotion(motion: MotionState, time: number, agentTextures: Agen
   return frames[frame]
 }
 
-function StudentPanel({ student }: { student: Student | null }) {
-  if (!student) {
-    return <aside className="detail-panel empty">Loading classroom state...</aside>
-  }
+function StudentCardsView({ students, onSelect }: { students: Student[]; onSelect: (id: string) => void }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const expandedStudent = students.find((student) => student.id === expandedId) ?? null
+  const decks = [students.slice(0, 5), students.slice(5, 10)]
+
+  return (
+    <section className="cards-view" aria-label="Student cards">
+      <div className="deck-board">
+        {decks.map((deck, deckIndex) => (
+          <div className="student-deck" key={`deck-${deckIndex}`}>
+            {deck.map((student, index) => (
+              <button
+                type="button"
+                className={`deck-card alert-${student.alert_level} ${expandedId === student.id ? 'selected-card' : ''}`}
+                key={student.id}
+                style={{
+                  '--card-index': index,
+                  '--card-tilt': `${(index - 2) * 1.8}deg`,
+                  '--status': toHex(statusColors[student.current_status]),
+                } as React.CSSProperties}
+                onClick={() => setExpandedId(student.id)}
+              >
+                <span className="deck-card-topline">
+                  <strong>{student.display_name}</strong>
+                  <span>{statusLabels[student.current_status]}</span>
+                </span>
+                <p>{student.minder_summary}</p>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {expandedStudent && (
+        <ExpandedStudentCard
+          student={expandedStudent}
+          onClose={() => setExpandedId(null)}
+          onOpenClassroom={() => onSelect(expandedStudent.id)}
+        />
+      )}
+    </section>
+  )
+}
+
+function ExpandedStudentCard({ student, onClose, onOpenClassroom }: { student: Student; onClose: () => void; onOpenClassroom: () => void }) {
+  const [activeAssignmentId, setActiveAssignmentId] = useState(student.assignments[0]?.assignment_id ?? '')
+  const supportFlags = Object.keys(student.accommodation_flags)
+  const activeAssignment = student.assignments.find((assignment) => assignment.assignment_id === activeAssignmentId) ?? student.assignments[0]
+
+  return (
+    <article className={`expanded-student-card alert-${student.alert_level}`}>
+      <button type="button" className="bubble-close" onClick={onClose} aria-label="Close expanded student card">
+        <X size={16} />
+      </button>
+      <header>
+        <div>
+          <p className="eyebrow">{student.profile_type.replaceAll('_', ' ')}</p>
+          <h2>{student.display_name}</h2>
+        </div>
+        <span className="card-status" style={{ '--status': toHex(statusColors[student.current_status]) } as React.CSSProperties}>
+          {statusLabels[student.current_status]}
+        </span>
+      </header>
+      <p>{student.minder_summary}</p>
+      <section className="metric-grid">
+        <Metric label="Focus" value={student.focus_score} max={18} />
+        <Metric label="Confusion" value={student.confusion_score} max={18} />
+        <Metric label="Engagement" value={student.engagement_level} max={100} />
+      </section>
+      <section>
+        <h3>Assignments</h3>
+        <div className="card-assignments">
+          {student.assignments.map((assignment) => (
+            <button
+              type="button"
+              key={assignment.assignment_id}
+              className={assignment.assignment_id === activeAssignment?.assignment_id ? 'active-assignment' : ''}
+              onClick={() => setActiveAssignmentId(assignment.assignment_id)}
+            >
+              <ClipboardList size={15} />
+              <span>{assignment.title}</span>
+              <small>{assignment.progress_percent}%</small>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section>
+        <h3>Approved Supports</h3>
+        <div className="card-supports">
+          {supportFlags.length
+            ? supportFlags.map((flag) => <span key={flag}>{flag.replaceAll('_', ' ')}</span>)
+            : <span>No simulated support flags</span>}
+        </div>
+      </section>
+      {activeAssignment && (
+        <footer>
+          <span>{activeAssignment.simulated_course}</span>
+          <button type="button" onClick={onOpenClassroom}>Open In Classroom</button>
+        </footer>
+      )}
+    </article>
+  )
+}
+
+function StudentBubble({ student, onClose }: { student: Student; onClose: () => void }) {
+  const [activeAssignmentId, setActiveAssignmentId] = useState(student.assignments[0]?.assignment_id ?? '')
   const events = [...(student.minder_events ?? []), ...(student.tutor_events ?? [])]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 8)
+  const activeAssignment = student.assignments.find((assignment) => assignment.assignment_id === activeAssignmentId) ?? student.assignments[0]
+
   return (
-    <aside className="detail-panel">
-      <p className="eyebrow">Selected Minder</p>
+    <aside className="student-bubble" aria-label={`${student.display_name} student details`}>
+      <button type="button" className="bubble-close" onClick={onClose} aria-label="Close student details">
+        <X size={16} />
+      </button>
+      <p className="eyebrow">Selected Student</p>
       <h2>{student.display_name}</h2>
       <div className={`status-card alert-${student.alert_level}`}>
         <AlertTriangle size={18} />
@@ -743,16 +889,8 @@ function StudentPanel({ student }: { student: Student | null }) {
         </div>
       </div>
       <section>
-        <h3>Teacher Recommendation</h3>
-        <p>{student.recommended_action}</p>
-      </section>
-      <section>
         <h3>Minder Summary</h3>
         <p>{student.minder_summary}</p>
-      </section>
-      <section>
-        <h3>Tutor Placeholder</h3>
-        <p>{student.tutor_summary}</p>
       </section>
       <section className="metric-grid">
         <Metric label="Focus" value={student.focus_score} max={18} />
@@ -763,14 +901,27 @@ function StudentPanel({ student }: { student: Student | null }) {
         <h3>Assignments</h3>
         <div className="assignments">
           {student.assignments.map((assignment) => (
-            <div key={assignment.assignment_id}>
+            <button
+              type="button"
+              key={assignment.assignment_id}
+              className={assignment.assignment_id === activeAssignment?.assignment_id ? 'active-assignment' : ''}
+              onClick={() => setActiveAssignmentId(assignment.assignment_id)}
+            >
+              <ClipboardList size={16} />
               <span>{assignment.title}</span>
               <progress value={assignment.progress_percent} max={100} />
               <small>{assignment.progress_percent}% - {assignment.simulated_course}</small>
-            </div>
+            </button>
           ))}
         </div>
       </section>
+      {activeAssignment && (
+        <section className="assignment-preview">
+          <h3>Assignment Workspace</h3>
+          <strong>{activeAssignment.title}</strong>
+          <p>{activeAssignment.simulated_course} assignment preview unavailable.</p>
+        </section>
+      )}
       <section>
         <h3>Approved Supports</h3>
         <div className="support-list">
@@ -779,8 +930,11 @@ function StudentPanel({ student }: { student: Student | null }) {
             : <span>No simulated support flags</span>}
         </div>
       </section>
-      <section>
-        <h3>Recent Events</h3>
+      <details className="student-history">
+        <summary>
+          <span>Student History</span>
+          <ChevronDown size={16} />
+        </summary>
         <div className="event-list">
           {events.map((event) => (
             <article key={`${event.event_type}-${event.id}`}>
@@ -789,7 +943,7 @@ function StudentPanel({ student }: { student: Student | null }) {
             </article>
           ))}
         </div>
-      </section>
+      </details>
     </aside>
   )
 }
