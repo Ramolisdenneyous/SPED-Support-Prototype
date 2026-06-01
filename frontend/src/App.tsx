@@ -137,10 +137,17 @@ type AgentTextures = {
   standing: Texture
   walkLeft: Texture[]
   walkRight: Texture[]
+  working: Texture[]
+  researching: Texture[]
+  offTask: Texture[]
 }
 
 const agentDisplayHeight = 122
+const offTaskDisplayWidth = 102
 const agentFrameRate = 8
+const workingFrameRate = 6
+const researchingFrameRate = 6
+const offTaskFrameRate = 1.75
 const agentAssetPaths = {
   standing: '/assets/student-agent/standing.png',
   walkLeft: [
@@ -155,6 +162,22 @@ const agentAssetPaths = {
     '/assets/student-agent/walk-right-3.png',
     '/assets/student-agent/walk-right-4.png',
   ],
+  working: [
+    '/assets/student-agent/working/work-1.png',
+    '/assets/student-agent/working/work-2.png',
+    '/assets/student-agent/working/work-3.png',
+    '/assets/student-agent/working/work-4.png',
+    '/assets/student-agent/working/work-5.png',
+  ],
+  researching: [
+    '/assets/student-agent/researching/research-1.png',
+    '/assets/student-agent/researching/research-2.png',
+    '/assets/student-agent/researching/research-3.png',
+    '/assets/student-agent/researching/research-4.png',
+    '/assets/student-agent/researching/research-5.png',
+    '/assets/student-agent/researching/research-6.png',
+  ],
+  offTask: Array.from({ length: 14 }, (_value, index) => `/assets/student-agent/off-task/off-task-${index + 1}.png`),
 }
 
 const homeDeskSlots: Record<string, ClassroomPoint> = {
@@ -193,7 +216,7 @@ const classroomLocations: Record<string, ClassroomLocation> = {
   },
   offTask: {
     label: 'Off-task zones',
-    slots: [[952, 438], [666, 398], [1118, 504], [1172, 472]],
+    slots: [[950, 374], [668, 338], [1078, 382], [1138, 360]],
   },
   accommodation: {
     label: 'Accommodation support area',
@@ -489,16 +512,22 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
       const classroom = new Container()
       app.stage.addChild(classroom)
 
-      const [bgTexture, standingTexture, walkLeftTextures, walkRightTextures] = await Promise.all([
+      const [bgTexture, standingTexture, walkLeftTextures, walkRightTextures, workingTextures, researchingTextures, offTaskTextures] = await Promise.all([
         Assets.load('/assets/teacher-classroom-background.png'),
         Assets.load(agentAssetPaths.standing),
         Promise.all(agentAssetPaths.walkLeft.map((path) => Assets.load(path))),
         Promise.all(agentAssetPaths.walkRight.map((path) => Assets.load(path))),
+        Promise.all(agentAssetPaths.working.map((path) => Assets.load(path))),
+        Promise.all(agentAssetPaths.researching.map((path) => Assets.load(path))),
+        Promise.all(agentAssetPaths.offTask.map((path) => Assets.load(path))),
       ])
       const agentTextures: AgentTextures = {
         standing: standingTexture,
         walkLeft: walkLeftTextures,
         walkRight: walkRightTextures,
+        working: workingTextures,
+        researching: researchingTextures,
+        offTask: offTaskTextures,
       }
       const background = new Sprite(bgTexture)
       background.width = sceneWidth
@@ -714,8 +743,7 @@ function createMinder(student: Student, agentTextures: AgentTextures, onTap: () 
   container.addChild(ring)
   const agent = new Sprite(agentTextures.standing)
   agent.anchor.set(0.5, 1)
-  agent.height = agentDisplayHeight
-  agent.width = agent.texture.width * (agentDisplayHeight / agent.texture.height)
+  sizeAgentSprite(agent, student)
   agent.y = 58
   agent.name = 'agentSprite'
   container.addChild(agent)
@@ -744,9 +772,8 @@ function updateMinder(container: Container, student: Student, selected: boolean,
 
   const agent = container.getChildByName('agentSprite') as Sprite | null
   if (agent) {
-    agent.texture = textureForMotion(motion, time, agentTextures)
-    agent.height = agentDisplayHeight
-    agent.width = agent.texture.width * (agentDisplayHeight / agent.texture.height)
+    agent.texture = textureForMotion(motion, time, student, agentTextures)
+    sizeAgentSprite(agent, student)
   }
 
   const marker = container.getChildByName('marker') as Text | null
@@ -755,12 +782,37 @@ function updateMinder(container: Container, student: Student, selected: boolean,
   container.scale.set(pulse)
 }
 
-function textureForMotion(motion: MotionState, time: number, agentTextures: AgentTextures) {
-  if (!motion.moving) return agentTextures.standing
+function textureForMotion(motion: MotionState, time: number, student: Student, agentTextures: AgentTextures) {
+  if (!motion.moving) {
+    if (student.current_status === 'working') {
+      const frame = Math.floor(time * workingFrameRate) % agentTextures.working.length
+      return agentTextures.working[frame]
+    }
+    if (student.current_status === 'researching') {
+      const frame = Math.floor(time * researchingFrameRate) % agentTextures.researching.length
+      return agentTextures.researching[frame]
+    }
+    if (student.current_status === 'off_task') {
+      const frame = Math.floor(time * offTaskFrameRate) % agentTextures.offTask.length
+      return agentTextures.offTask[frame]
+    }
+    return agentTextures.standing
+  }
 
   const frames = motion.targetX < motion.startX ? agentTextures.walkLeft : agentTextures.walkRight
   const frame = Math.floor(time * agentFrameRate) % frames.length
   return frames[frame]
+}
+
+function sizeAgentSprite(agent: Sprite, student: Student) {
+  if (student.current_status === 'off_task') {
+    agent.width = offTaskDisplayWidth
+    agent.height = agent.texture.height * (offTaskDisplayWidth / agent.texture.width)
+    return
+  }
+
+  agent.height = agentDisplayHeight
+  agent.width = agent.texture.width * (agentDisplayHeight / agent.texture.height)
 }
 
 function StudentCardsView({ students, onSelect }: { students: Student[]; onSelect: (id: string) => void }) {
@@ -962,7 +1014,7 @@ function markerFor(status: StudentStatus) {
   if (status === 'confused') return '???'
   if (status === 'needs_help') return '!!!'
   if (status === 'escalation') return '!!!'
-  if (status === 'off_task') return 'OFF'
+  if (status === 'off_task') return ''
   if (status === 'playing_games') return 'GAME'
   if (status === 'talking_with_friends') return 'CHAT'
   if (status === 'using_accommodation') return 'OK'
