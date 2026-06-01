@@ -27,6 +27,8 @@ http://localhost:8000/health
 - `simulator`: optional rule-based fake student heartbeat service. It is off by default; use the dashboard Start Simulator button for normal demos.
 - `postgres`: demo database.
 
+The dashboard keeps the simulator alive only while a browser session is active. As a hosting safety rail, the backend also stops any continuous simulator run after `SIM_MAX_RUNTIME_SECONDS` seconds, defaulting to one hour.
+
 The standalone simulator container is behind a Docker Compose profile and is only for manual testing:
 
 ```powershell

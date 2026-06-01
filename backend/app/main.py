@@ -9,7 +9,6 @@ from .database import create_db_and_tables, engine, get_session
 from .logic import tick_next_student
 from .models import (
     Assignment,
-    DashboardSnapshot,
     MinderEvent,
     Student,
     StudentAssignmentState,
@@ -88,15 +87,12 @@ def get_student_events(student_id: str, session: Session = Depends(get_session))
 @app.get("/dashboard/state")
 def dashboard_state(session: Session = Depends(get_session)) -> dict:
     students = session.exec(select(Student).order_by(Student.id)).all()
-    payload = {
+    return {
         "generated_at": now_utc().isoformat(),
         "students": [student_payload(session, student, include_events=False) for student in students],
         "summary": build_summary(students),
         "safety_note": "Demo uses artificial student data for teacher-facing support only.",
     }
-    session.add(DashboardSnapshot(snapshot_json=payload))
-    session.commit()
-    return payload
 
 
 @app.post("/simulator/tick")

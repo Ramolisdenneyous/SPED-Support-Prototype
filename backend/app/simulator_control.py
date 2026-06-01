@@ -17,23 +17,32 @@ class SimulatorController:
     def __init__(self) -> None:
         heartbeat_seconds = max(5, int(os.getenv("SIM_HEARTBEAT_SECONDS", "50")))
         student_count = max(1, int(os.getenv("SIM_STUDENT_COUNT", "10")))
+        self.max_runtime_seconds = max(60, int(os.getenv("SIM_MAX_RUNTIME_SECONDS", "3600")))
         self.tick_gap_seconds = max(1.0, heartbeat_seconds / student_count)
         self._stop_event = threading.Event()
         self._lock = threading.Lock()
         self._thread: threading.Thread | None = None
         self.last_tick_at: datetime | None = None
         self.last_error: str | None = None
+        self.started_at: datetime | None = None
         self.lease_expires_at: datetime | None = None
+        self.max_expires_at: datetime | None = None
 
     def start(self) -> dict:
         with self._lock:
             self._refresh_lease_locked()
             if self._thread and self._thread.is_alive():
                 return self.status()
+            self.started_at = now_utc()
+            self.max_expires_at = self.started_at + timedelta(seconds=self.max_runtime_seconds)
             self._stop_event.clear()
             self._thread = threading.Thread(target=self._run, name="demo-simulator", daemon=True)
             self._thread.start()
-            logger.info("Simulator started with tick_gap_seconds=%.1f", self.tick_gap_seconds)
+            logger.info(
+                "Simulator started with tick_gap_seconds=%.1f max_runtime_seconds=%s",
+                self.tick_gap_seconds,
+                self.max_runtime_seconds,
+            )
             return self.status()
 
     def keepalive(self) -> dict:
@@ -44,7 +53,7 @@ class SimulatorController:
     def stop(self) -> dict:
         with self._lock:
             self._stop_event.set()
-            self.lease_expires_at = None
+            self._clear_runtime_locked()
             thread = self._thread
         if thread and thread.is_alive():
             thread.join(timeout=2)
@@ -59,21 +68,29 @@ class SimulatorController:
         return {
             "running": running,
             "tick_gap_seconds": self.tick_gap_seconds,
+            "max_runtime_seconds": self.max_runtime_seconds,
             "last_tick_at": self.last_tick_at.isoformat() if self.last_tick_at else None,
             "last_error": self.last_error,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
             "lease_expires_at": self.lease_expires_at.isoformat() if self.lease_expires_at else None,
+            "max_expires_at": self.max_expires_at.isoformat() if self.max_expires_at else None,
         }
 
     def _run(self) -> None:
         while not self._stop_event.is_set():
             with self._lock:
                 lease_expires_at = self.lease_expires_at
-            if lease_expires_at and now_utc() > lease_expires_at:
+                max_expires_at = self.max_expires_at
+            current_time = now_utc()
+            if lease_expires_at and current_time > lease_expires_at:
                 logger.info("Simulator lease expired; stopping background ticks.")
                 with self._lock:
-                    self.lease_expires_at = None
-                    self._thread = None
-                    self._stop_event.set()
+                    self._stop_for_expiration_locked()
+                break
+            if max_expires_at and current_time > max_expires_at:
+                logger.info("Simulator maximum runtime expired; stopping background ticks.")
+                with self._lock:
+                    self._stop_for_expiration_locked()
                 break
             try:
                 with Session(engine) as session:
@@ -88,3 +105,13 @@ class SimulatorController:
 
     def _refresh_lease_locked(self) -> None:
         self.lease_expires_at = now_utc() + timedelta(seconds=max(15.0, self.tick_gap_seconds * 3))
+
+    def _clear_runtime_locked(self) -> None:
+        self.started_at = None
+        self.lease_expires_at = None
+        self.max_expires_at = None
+
+    def _stop_for_expiration_locked(self) -> None:
+        self._clear_runtime_locked()
+        self._thread = None
+        self._stop_event.set()
