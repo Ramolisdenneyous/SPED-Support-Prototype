@@ -1328,24 +1328,7 @@ progress::-webkit-progress-value {
   }
 
   .demo-controls {
-    right: 8px;
-    bottom: 6px;
-    left: 8px;
-    flex-wrap: nowrap;
-    gap: 6px;
-    padding: 6px;
-    overflow-x: auto;
-    border: 1px solid #c9dce7;
-    border-radius: 8px;
-    background: rgba(248, 251, 253, 0.9);
-  }
-
-  .demo-controls button {
-    flex: 0 0 auto;
-    min-height: 34px;
-    padding: 6px 9px;
-    font-size: 12px;
-    white-space: nowrap;
+    display: none;
   }
 }
 
@@ -1385,5 +1368,58 @@ progress::-webkit-progress-value {
   .classroom-stage,
   .cards-view {
     height: calc(100dvh - 82px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .app-shell {
+    min-height: 100dvh;
+    padding: 0;
+    background: #172234;
+  }
+
+  .map-shell {
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .topbar,
+  .status-rail,
+  .demo-controls {
+    display: none;
+  }
+
+  .error-banner {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 10;
+    margin: 0;
+  }
+
+  .classroom-stage,
+  .cards-view {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .cards-view {
+    padding: 8px;
+  }
+
+  .student-bubble {
+    inset: 8px 8px auto auto;
+    width: min(520px, calc(100vw - 16px));
+    max-height: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+
+  .assignment-review-bubble,
+  .accommodation-review-bubble {
+    inset: 8px;
   }
 }

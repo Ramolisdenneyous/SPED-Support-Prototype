@@ -610,7 +610,10 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
         if (app.screen.width !== hostWidth || app.screen.height !== hostHeight) {
           app.renderer.resize(hostWidth, hostHeight)
         }
-        const scale = Math.min(hostWidth / sceneWidth, hostHeight / sceneHeight)
+        const isPhoneLandscape = hostWidth > hostHeight && hostHeight <= 520
+        const scale = isPhoneLandscape
+          ? Math.max(hostWidth / sceneWidth, hostHeight / sceneHeight)
+          : Math.min(hostWidth / sceneWidth, hostHeight / sceneHeight)
         classroom.scale.set(scale)
         classroom.x = (hostWidth - sceneWidth * scale) / 2
         classroom.y = (hostHeight - sceneHeight * scale) / 2
