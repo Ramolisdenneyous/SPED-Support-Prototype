@@ -1114,48 +1114,141 @@ progress::-webkit-progress-value {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 8px;
+    min-height: 100dvh;
+    padding: 4px;
+  }
+
+  .map-shell {
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: calc(100dvh - 8px);
+    border-radius: 6px;
   }
 
   .topbar {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    padding: 7px 8px;
   }
 
-  .topbar-actions,
-  .view-tabs,
-  .sim-control-group {
-    justify-items: stretch;
-    justify-content: flex-start;
+  .eyebrow {
+    display: none;
+  }
+
+  h1 {
+    font-size: 18px;
+    line-height: 1.05;
   }
 
   .view-tabs {
-    width: 100%;
+    grid-row: 1;
+    grid-column: 2;
+    padding: 2px;
   }
 
   .view-tabs button {
-    flex: 1;
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .view-tabs button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .topbar-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
   }
 
   .summary-strip {
-    align-items: stretch;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .summary-pill {
-    flex: 1 1 130px;
+    grid-template-columns: 14px auto;
+    column-gap: 5px;
+    min-width: 0;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+
+  .summary-pill svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .summary-pill span {
+    font-size: 9px;
+  }
+
+  .summary-pill strong {
+    font-size: 13px;
+  }
+
+  .sim-control-group {
+    flex: 0 0 auto;
+  }
+
+  .sim-control-group button {
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 0;
+  }
+
+  .sim-control-group button svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .status-rail {
+    position: absolute;
+    top: 86px;
+    left: 8px;
+    z-index: 2;
+    max-width: calc(100% - 16px);
+    min-height: 0;
+    padding: 0;
+    overflow-x: auto;
+    border: 0;
+    background: transparent;
+  }
+
+  .status-rail span {
+    flex: 0 0 auto;
+    padding: 5px 7px;
+    background: color-mix(in srgb, var(--status), white 74%);
+    font-size: 11px;
+    box-shadow: 0 4px 12px rgba(23, 34, 52, 0.12);
+  }
+
+  .error-banner {
+    margin: 6px 8px 0;
+    padding: 7px 9px;
+    font-size: 12px;
   }
 
   .classroom-stage {
-    height: 62vh;
-    min-height: 360px;
+    height: calc(100dvh - 98px);
+    min-height: 0;
   }
 
   .cards-view {
     gap: 18px;
-    height: 62vh;
-    min-height: 360px;
+    height: calc(100dvh - 98px);
+    min-height: 0;
     padding: 10px;
-    padding-bottom: 168px;
+    padding-bottom: 58px;
     overflow: auto;
   }
 
@@ -1204,10 +1297,10 @@ progress::-webkit-progress-value {
   .student-bubble {
     top: auto;
     right: 8px;
-    bottom: 58px;
+    bottom: 52px;
     left: 8px;
     width: auto;
-    max-height: 58vh;
+    max-height: 62dvh;
     border-radius: 18px;
   }
 
@@ -1217,7 +1310,7 @@ progress::-webkit-progress-value {
 
   .assignment-review-bubble,
   .accommodation-review-bubble {
-    inset: 74px 8px 76px;
+    inset: 58px 8px 54px;
     width: auto;
   }
 
@@ -1232,5 +1325,65 @@ progress::-webkit-progress-value {
 
   .reveal-line {
     display: none;
+  }
+
+  .demo-controls {
+    right: 8px;
+    bottom: 6px;
+    left: 8px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 6px;
+    overflow-x: auto;
+    border: 1px solid #c9dce7;
+    border-radius: 8px;
+    background: rgba(248, 251, 253, 0.9);
+  }
+
+  .demo-controls button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 6px 9px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 6px;
+  }
+
+  h1 {
+    font-size: 17px;
+  }
+
+  .view-tabs {
+    grid-column: 2;
+    width: auto;
+  }
+
+  .view-tabs button {
+    width: 34px;
+    padding: 5px;
+    font-size: 0;
+  }
+
+  .topbar-actions {
+    gap: 5px;
+  }
+
+  .summary-pill.safe {
+    display: none;
+  }
+
+  .status-rail {
+    top: 72px;
+  }
+
+  .classroom-stage,
+  .cards-view {
+    height: calc(100dvh - 82px);
   }
 }
