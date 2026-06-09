@@ -14,22 +14,22 @@ from .models import (
 
 
 PROFILES = [
-    ("demo_01", "Avery", "steady_worker", 13, 7, 9, 5, {"executive_function_support": True}),
-    ("demo_02", "Blake", "high_achiever_low_help", 15, 6, 5, 4, {}),
+    ("demo_01", "Avery", "steady_worker", 13, 7, 9, 5, {"task_chunking": True}),
+    ("demo_02", "Blake", "high_achiever_low_help", 15, 6, 5, 4, {"text_to_speech": True}),
     ("demo_03", "Casey", "confused_persistent", 12, 12, 11, 5, {"task_chunking": True}),
-    ("demo_04", "Devon", "frequent_task_switcher", 10, 8, 9, 11, {"executive_function_support": True}),
+    ("demo_04", "Devon", "frequent_task_switcher", 10, 8, 9, 11, {"text_to_speech": True}),
     ("demo_05", "Emery", "strong_reader_poor_completion", 11, 7, 7, 8, {}),
-    ("demo_06", "Finley", "dyslexia_support", 10, 10, 10, 6, {"reading_support": True, "text_to_speech": True}),
-    ("demo_07", "Gray", "executive_function_support", 9, 9, 9, 7, {"checklist_support": True}),
-    ("demo_08", "Harper", "anxiety_frustration_spike", 11, 11, 6, 5, {"calm_prompting": True}),
+    ("demo_06", "Finley", "dyslexia_support", 10, 10, 10, 6, {"text_to_speech": True, "task_chunking": True}),
+    ("demo_07", "Gray", "executive_function_support", 9, 9, 9, 7, {}),
+    ("demo_08", "Harper", "anxiety_frustration_spike", 11, 11, 6, 5, {"task_chunking": True, "text_to_speech": True}),
     ("demo_09", "Indigo", "off_task_gaming_tendency", 9, 6, 8, 13, {}),
-    ("demo_10", "Jordan", "quietly_stalled", 8, 10, 4, 5, {"teacher_check_in": True}),
+    ("demo_10", "Jordan", "quietly_stalled", 8, 10, 4, 5, {"task_chunking": True, "text_to_speech": True}),
 ]
 
 ASSIGNMENTS = [
-    ("ela_context_clues", "ELA: Context Clues Practice", "Read the passage and identify meaning from context.", "Resource English"),
-    ("math_fraction_models", "Math: Fraction Model Exit Ticket", "Complete visual fraction comparison problems.", "Applied Math"),
-    ("science_vocab", "Science: Ecosystem Vocabulary", "Match key terms and write one example for each.", "Life Science"),
+    ("whale_rider_homework", "Whale Rider Homework", "Take movie watch notes for Whale Rider session one.", "Resource English"),
+    ("math_homework_1", "Math Homework 1", "Solve order of operations problems using PEMDAS.", "Applied Math"),
+    ("chemistry_homework_1", "Chemistry Homework 1", "Balance the chemical equations on the worksheet.", "Chemistry"),
 ]
 
 

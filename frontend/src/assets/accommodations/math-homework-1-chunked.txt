@@ -1,0 +1,139 @@
+﻿Order of Operations
+Solve the following using PEMDAS
+Remember the order:
+P = Parentheses
+E = Exponents
+MD = Multiply or Divide from left to right
+AS = Add or Subtract from left to right
+☐ I reviewed PEMDAS
+________________
+
+
+1) (12 ÷ 2) x 5² - 8
+Step 1: Solve inside the parentheses.
+☐ Complete
+Step 2: Solve the exponent.
+☐ Complete
+Step 3: Multiply.
+☐ Complete
+Step 4: Subtract.
+☐ Complete
+Step 5: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+2) (4³ ÷ 2) x 6 - 3
+Step 1: Solve the exponent inside the parentheses.
+☐ Complete
+Step 2: Divide inside the parentheses.
+☐ Complete
+Step 3: Multiply.
+☐ Complete
+Step 4: Subtract.
+☐ Complete
+Step 5: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+☐ Finished Problems 1–2
+☐ Check your work before moving on
+________________
+
+
+3) 9 x [(-3) + 4 - (-2)²]
+Step 1: Solve the exponent inside the brackets.
+☐ Complete
+Step 2: Add and subtract inside the brackets from left to right.
+☐ Complete
+Step 3: Multiply by 9.
+☐ Complete
+Step 4: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+4) (14² x 15) - (2² + 20)
+Step 1: Solve the exponent in the first parentheses.
+☐ Complete
+Step 2: Multiply inside the first parentheses.
+☐ Complete
+Step 3: Solve the exponent in the second parentheses.
+☐ Complete
+Step 4: Add inside the second parentheses.
+☐ Complete
+Step 5: Subtract the second value from the first value.
+☐ Complete
+Step 6: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+☐ Finished Problems 3–4
+☐ Check your work before moving on
+________________
+
+
+5) 4² + (8 - 2)² ÷ 4
+Step 1: Solve inside the parentheses.
+☐ Complete
+Step 2: Solve the exponents.
+☐ Complete
+Step 3: Divide.
+☐ Complete
+Step 4: Add.
+☐ Complete
+Step 5: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+6) (15² - 9) x 2 - 15
+Step 1: Solve the exponent inside the parentheses.
+☐ Complete
+Step 2: Subtract inside the parentheses.
+☐ Complete
+Step 3: Multiply.
+☐ Complete
+Step 4: Subtract.
+☐ Complete
+Step 5: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+☐ Finished Problems 5–6
+☐ Check your work before moving on
+________________
+
+
+7) (6² + 4) ÷ (18 - 14)
+Step 1: Solve the exponent in the first parentheses.
+☐ Complete
+Step 2: Add inside the first parentheses.
+☐ Complete
+Step 3: Subtract inside the second parentheses.
+☐ Complete
+Step 4: Divide.
+☐ Complete
+Step 5: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+8) (6² + 18 - 8) ÷ 2
+Step 1: Solve the exponent inside the parentheses.
+☐ Complete
+Step 2: Add and subtract inside the parentheses from left to right.
+☐ Complete
+Step 3: Divide by 2.
+☐ Complete
+Step 4: Write your final answer on the line.
+Answer: ____________________
+________________
+
+
+☐ Finished Problems 7–8
+☐ Checked all answers
+☐ Ready to submit

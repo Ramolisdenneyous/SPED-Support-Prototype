@@ -407,7 +407,8 @@ h3 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.card-supports span {
+.card-supports span,
+.card-supports button {
   padding: 7px 8px;
   border: 1px solid #d6e3ec;
   border-radius: 8px;
@@ -416,6 +417,26 @@ h3 {
   font-size: 12px;
   font-weight: 800;
   text-transform: capitalize;
+}
+
+.card-supports button {
+  display: grid;
+  gap: 3px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-supports button:hover,
+.card-supports button.active-support {
+  border-color: #73aeca;
+  background: #eef8fc;
+}
+
+.card-supports button small {
+  color: #7b8fa0;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: none;
 }
 
 .expanded-student-card footer {
@@ -467,6 +488,24 @@ h3 {
   text-transform: capitalize;
 }
 
+.support-list button {
+  align-items: flex-start;
+  flex-direction: column;
+  text-align: left;
+}
+
+.support-list button.active-support {
+  border-color: #73aeca;
+  background: #eef8fc;
+}
+
+.support-list button small {
+  color: #7b8fa0;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: none;
+}
+
 .demo-controls button:hover,
 .sim-control-group button:hover,
 .support-list button:hover {
@@ -503,18 +542,18 @@ h3 {
 
 .student-bubble {
   position: absolute;
-  top: 118px;
+  top: 96px;
   right: 18px;
   z-index: 4;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: min(380px, calc(100vw - 48px));
-  max-height: calc(100vh - 170px);
+  width: min(760px, calc(100vw - 48px));
+  max-height: calc(100vh - 146px);
   padding: 18px;
   overflow: auto;
   border: 1px solid #bfd2df;
-  border-radius: 24px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 22px 70px rgba(25, 50, 70, 0.24);
 }
@@ -687,16 +726,291 @@ progress::-webkit-progress-value {
   font-weight: 850;
 }
 
-.assignment-preview {
+.review-bubble {
+  position: fixed;
+  z-index: 7;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #c9dce7;
+  border-radius: 8px;
+  background: rgba(247, 251, 253, 0.98);
+  box-shadow: 0 24px 72px rgba(25, 50, 70, 0.26);
+}
+
+.assignment-review-bubble {
+  top: 118px;
+  right: min(800px, calc(100vw - 780px));
+  width: min(520px, calc(100vw - 48px));
+  max-height: calc(100vh - 178px);
+  overflow: auto;
+}
+
+.accommodation-review-bubble {
+  inset: 86px 28px 82px;
+  overflow: auto;
+}
+
+.assignment-review-bubble::before,
+.accommodation-review-bubble::before {
+  content: "";
+  position: absolute;
+  top: 52px;
+  right: -10px;
+  width: 20px;
+  height: 20px;
+  border-top: 1px solid #c9dce7;
+  border-right: 1px solid #c9dce7;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.review-bubble strong {
+  color: #1d3446;
+  font-size: 14px;
+}
+
+.review-bubble img {
+  display: block;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border: 1px solid #d6e3ec;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.review-bubble pre {
+  max-height: 62vh;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid #d6e3ec;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17212c;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.accommodation-review-bubble {
+  border: 1px solid #b7d7c8;
+  background: #f3fbf7;
+}
+
+.accommodation-transform {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(280px, 1.2fr);
+  gap: 12px;
+  overflow: hidden;
+}
+
+.original-lesson,
+.rebuilt-lesson {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 260px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid #d6e3ec;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.original-lesson span,
+.rebuilt-lesson span {
+  color: #62798d;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.original-lesson img {
+  width: 100%;
+  max-height: 54vh;
+  object-fit: contain;
+  transition: filter 5s ease, opacity 5s ease, transform 5s ease;
+}
+
+.stage-transforming .original-lesson img {
+  filter: blur(4px);
+  opacity: 0.45;
+  transform: scale(0.985);
+}
+
+.reveal-line {
+  position: absolute;
+  top: 36px;
+  bottom: 0;
+  left: calc(40% + 6px);
+  z-index: 2;
+  width: 3px;
+  border-radius: 999px;
+  background: #3d8dae;
+  box-shadow: 0 0 18px rgba(61, 141, 174, 0.5);
+  transform: translateY(-110%);
+  opacity: 0;
+}
+
+.stage-transforming .reveal-line {
+  animation: reveal-scan 5s ease forwards;
+}
+
+.rebuilt-lesson {
+  clip-path: inset(0 0 100% 0);
+}
+
+.stage-transforming .rebuilt-lesson {
+  animation: reveal-lesson 5s ease forwards;
+}
+
+.stage-review .rebuilt-lesson,
+.stage-approved .rebuilt-lesson,
+.stage-sending .rebuilt-lesson,
+.stage-sent .rebuilt-lesson {
+  clip-path: inset(0);
+}
+
+@keyframes reveal-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-110%);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(100%);
+  }
+}
+
+@keyframes reveal-lesson {
+  to {
+    clip-path: inset(0);
+  }
+}
+
+.support-notes {
+  display: grid;
+  gap: 7px;
+  color: #31495d;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.support-notes textarea {
+  min-height: 78px;
+  resize: vertical;
   padding: 10px;
   border: 1px solid #c9dce7;
   border-radius: 8px;
-  background: #f7fbfd;
+  color: #17212c;
+  font: inherit;
+  font-weight: 500;
 }
 
-.assignment-preview strong {
+.tts-clip-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tts-clip {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #d6e3ec;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.tts-clip strong {
   color: #1d3446;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.tts-clip audio {
+  width: 100%;
+  min-height: 36px;
+}
+
+.review-actions,
+.approval-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-actions button,
+.approval-actions button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #79b79d;
+  border-radius: 8px;
+  background: #e7f7ef;
+  color: #185c43;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.review-actions .reject-action {
+  border-color: #e6a192;
+  background: #fff1ed;
+  color: #963527;
+}
+
+.approval-note {
+  padding: 8px 10px;
+  border: 1px solid #b7d7c8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #245f49;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.sending-state {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #b7d7c8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.send-bar {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce8ef;
+}
+
+.send-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  border-radius: inherit;
+  background: #3d8dae;
+  animation: send-progress 2s ease forwards;
+}
+
+@keyframes send-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(240%);
+  }
 }
 
 .event-list p {
@@ -784,6 +1098,18 @@ progress::-webkit-progress-value {
     right: 12px;
     max-height: calc(100vh - 188px);
   }
+
+  .assignment-review-bubble {
+    top: 144px;
+    right: 18px;
+    left: 18px;
+    width: auto;
+    max-height: calc(100vh - 220px);
+  }
+
+  .accommodation-review-bubble {
+    inset: 112px 18px 92px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -855,7 +1181,8 @@ progress::-webkit-progress-value {
 
   .metric-grid,
   .support-list,
-  .card-supports {
+  .card-supports,
+  .tts-clip-list {
     grid-template-columns: 1fr;
   }
 
@@ -885,6 +1212,25 @@ progress::-webkit-progress-value {
   }
 
   .student-bubble::before {
+    display: none;
+  }
+
+  .assignment-review-bubble,
+  .accommodation-review-bubble {
+    inset: 74px 8px 76px;
+    width: auto;
+  }
+
+  .assignment-review-bubble::before,
+  .accommodation-review-bubble::before {
+    display: none;
+  }
+
+  .accommodation-transform {
+    grid-template-columns: 1fr;
+  }
+
+  .reveal-line {
     display: none;
   }
 }

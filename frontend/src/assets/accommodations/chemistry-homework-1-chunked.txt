@@ -1,0 +1,259 @@
+﻿Name: ________________________________  Date: ______________
+Balancing Chemical Equations
+Balance the following chemical equations.
+How to Balance Each Equation
+For each problem:
+Step 1: Read the full equation.
+☐ Complete
+Step 2: List each element on the reactant side.
+☐ Complete
+Step 3: List each element on the product side.
+☐ Complete
+Step 4: Count the atoms of each element on both sides.
+☐ Complete
+Step 5: Add coefficients to balance one element at a time.
+☐ Complete
+Step 6: Recount the atoms on both sides.
+☐ Complete
+Step 7: Make sure the coefficients are in the lowest whole-number ratio.
+☐ Complete
+Step 8: Write the final balanced equation.
+☐ Complete
+☐ Ready to begin the problems
+________________
+
+
+________________
+Problem 1
+_____ Fe + _____ H₂SO₄ ⟶ _____ Fe₂(SO₄)₃ + _____ H₂
+Step 1: Count Fe on both sides.
+☐ Complete
+Step 2: Count H on both sides.
+☐ Complete
+Step 3: Count SO₄ as a group on both sides.
+☐ Complete
+Step 4: Add coefficients to balance Fe.
+☐ Complete
+Step 5: Add coefficients to balance SO₄.
+☐ Complete
+Step 6: Add coefficients to balance H.
+☐ Complete
+Step 7: Recheck all atoms or groups.
+☐ Complete
+Step 8: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 2
+_____ CH₄ + _____ O₂ ⟶ _____ CO₂ + _____ H₂O
+Step 1: Count C on both sides.
+☐ Complete
+Step 2: Count H on both sides.
+☐ Complete
+Step 3: Count O on both sides.
+☐ Complete
+Step 4: Balance C first.
+☐ Complete
+Step 5: Balance H next.
+☐ Complete
+Step 6: Balance O last.
+☐ Complete
+Step 7: Recheck all atoms.
+☐ Complete
+Step 8: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 3
+_____ SiCl₄(ℓ) + _____ H₂O(ℓ) ⟶ _____ SiO₂(s) + _____ HCl(aq)
+Step 1: Count Si on both sides.
+☐ Complete
+Step 2: Count Cl on both sides.
+☐ Complete
+Step 3: Count H on both sides.
+☐ Complete
+Step 4: Count O on both sides.
+☐ Complete
+Step 5: Balance Si first.
+☐ Complete
+Step 6: Balance Cl and H.
+☐ Complete
+Step 7: Balance O.
+☐ Complete
+Step 8: Recheck all atoms.
+☐ Complete
+Step 9: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 4
+_____ AgI + _____ Na₂S ⟶ _____ Ag₂S + _____ NaI
+Step 1: Count Ag on both sides.
+☐ Complete
+Step 2: Count I on both sides.
+☐ Complete
+Step 3: Count Na on both sides.
+☐ Complete
+Step 4: Count S on both sides.
+☐ Complete
+Step 5: Balance Ag.
+☐ Complete
+Step 6: Balance Na and I.
+☐ Complete
+Step 7: Balance S.
+☐ Complete
+Step 8: Recheck all atoms.
+☐ Complete
+Step 9: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 5
+_____ NH₃ + _____ O₂ ⟶ _____ NO + _____ H₂O
+Step 1: Count N on both sides.
+☐ Complete
+Step 2: Count H on both sides.
+☐ Complete
+Step 3: Count O on both sides.
+☐ Complete
+Step 4: Balance N.
+☐ Complete
+Step 5: Balance H.
+☐ Complete
+Step 6: Balance O.
+☐ Complete
+Step 7: Recheck all atoms.
+☐ Complete
+Step 8: Make sure all coefficients are whole numbers.
+☐ Complete
+Step 9: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+
+
+________________
+Problem 6
+_____ FeO₃(s) + _____ CO(g) ⟶ _____ Fe(ℓ) + _____ CO₂(g)
+Step 1: Count Fe on both sides.
+☐ Complete
+Step 2: Count O on both sides.
+☐ Complete
+Step 3: Count C on both sides.
+☐ Complete
+Step 4: Balance Fe.
+☐ Complete
+Step 5: Balance C.
+☐ Complete
+Step 6: Balance O.
+☐ Complete
+Step 7: Recheck all atoms.
+☐ Complete
+Step 8: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 7
+_____ SiO₂ + _____ HF ⟶ _____ SiF₄ + _____ H₂O
+Step 1: Count Si on both sides.
+☐ Complete
+Step 2: Count O on both sides.
+☐ Complete
+Step 3: Count H on both sides.
+☐ Complete
+Step 4: Count F on both sides.
+☐ Complete
+Step 5: Balance Si.
+☐ Complete
+Step 6: Balance O and H.
+☐ Complete
+Step 7: Balance F.
+☐ Complete
+Step 8: Recheck all atoms.
+☐ Complete
+Step 9: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 8
+_____ NaBr + _____ Cl₂ ⟶ _____ NaCl + _____ Br₂
+Step 1: Count Na on both sides.
+☐ Complete
+Step 2: Count Br on both sides.
+☐ Complete
+Step 3: Count Cl on both sides.
+☐ Complete
+Step 4: Balance Br.
+☐ Complete
+Step 5: Balance Cl.
+☐ Complete
+Step 6: Balance Na.
+☐ Complete
+Step 7: Recheck all atoms.
+☐ Complete
+Step 8: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 9
+_____ (NH₄)₃PO₄ + _____ Pb(NO₃)₄ ⟶ _____ Pb₃(PO₄)₄ + _____ NH₄NO₃
+Step 1: Count NH₄ as a group on both sides.
+☐ Complete
+Step 2: Count PO₄ as a group on both sides.
+☐ Complete
+Step 3: Count Pb on both sides.
+☐ Complete
+Step 4: Count NO₃ as a group on both sides.
+☐ Complete
+Step 5: Balance Pb.
+☐ Complete
+Step 6: Balance PO₄.
+☐ Complete
+Step 7: Balance NH₄.
+☐ Complete
+Step 8: Balance NO₃.
+☐ Complete
+Step 9: Recheck all atoms or groups.
+☐ Complete
+Step 10: Write the final coefficients in the blanks.
+☐ Complete
+________________
+
+
+________________
+Problem 10
+_____ Mg(OH)₂ + _____ HCl ⟶ _____ MgCl₂ + _____ H₂O
+Step 1: Count Mg on both sides.
+☐ Complete
+Step 2: Count OH as a group on the reactant side.
+☐ Complete
+Step 3: Count H and O on the product side.
+☐ Complete
+Step 4: Count Cl on both sides.
+☐ Complete
+Step 5: Balance Mg.
+☐ Complete
+Step 6: Balance Cl.
+☐ Complete
+Step 7: Balance H and O.
+☐ Complete
+Step 8: Recheck all atoms.
+☐ Complete
+Step 9: Write the final coefficients in the blanks.
+☐ Complete
+________________

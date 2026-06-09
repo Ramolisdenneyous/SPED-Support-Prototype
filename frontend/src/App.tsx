@@ -11,6 +11,9 @@ import {
   Texture,
 } from 'pixi.js'
 import { AlertTriangle, CheckCircle2, ChevronDown, ClipboardList, HelpCircle, LayoutGrid, Play, RefreshCw, RotateCcw, School, ShieldCheck, X } from 'lucide-react'
+import chunkedChemistryHomework from './assets/accommodations/chemistry-homework-1-chunked.txt?raw'
+import chunkedMathHomework from './assets/accommodations/math-homework-1-chunked.txt?raw'
+import chunkedWhaleRiderHomework from './assets/accommodations/whale-rider-homework-chunked.txt?raw'
 import './App.css'
 
 type StudentStatus =
@@ -31,6 +34,8 @@ type AssignmentState = {
   assignment_id: string
   title: string
   simulated_course: string
+  description?: string
+  asset_url?: string | null
   progress_percent: number
   status: string
 }
@@ -84,6 +89,10 @@ type SimulatorStatus = {
 }
 
 type ViewMode = 'classroom' | 'cards'
+type TtsClip = {
+  label: string
+  url: string
+}
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const sceneWidth = 1536
@@ -112,6 +121,54 @@ const statusColors: Record<StudentStatus, number> = {
   using_accommodation: 0x62c370,
   needs_help: 0xff595e,
   escalation: 0xb00020,
+}
+const cachedSupportResults: Record<string, Record<string, { title: string; content: string }>> = {
+  whale_rider_homework: {
+    task_chunking: {
+      title: 'Chunked Whale Rider Homework',
+      content: chunkedWhaleRiderHomework,
+    },
+  },
+  math_homework_1: {
+    task_chunking: {
+      title: 'Chunked Math Homework 1',
+      content: chunkedMathHomework,
+    },
+  },
+  chemistry_homework_1: {
+    task_chunking: {
+      title: 'Chunked Chemistry Homework 1',
+      content: chunkedChemistryHomework,
+    },
+  },
+}
+const cachedTtsResults: Record<string, { title: string; clips: TtsClip[] }> = {
+  whale_rider_homework: {
+    title: 'Whale Rider Homework Audio Pack',
+    clips: [
+      { label: 'Timeline', url: '/assets/tts/whale-rider-homework/timeline.mp3' },
+      { label: 'Cultural Elements', url: '/assets/tts/whale-rider-homework/cultural-elements.mp3' },
+      { label: 'Setting', url: '/assets/tts/whale-rider-homework/setting.mp3' },
+      { label: 'Conflict', url: '/assets/tts/whale-rider-homework/conflict.mp3' },
+      { label: 'Concrete Detail #1', url: '/assets/tts/whale-rider-homework/concrete-detail-1.mp3' },
+      { label: 'Analysis and Unpacking', url: '/assets/tts/whale-rider-homework/analysis-unpacking.mp3' },
+      { label: 'Additional Details and Analysis', url: '/assets/tts/whale-rider-homework/additional-details.mp3' },
+    ],
+  },
+  math_homework_1: {
+    title: 'Math Homework 1 Audio Pack',
+    clips: Array.from({ length: 8 }, (_value, index) => ({
+      label: `Problem ${index + 1}`,
+      url: `/assets/tts/math-homework-1/problem-${index + 1}.mp3`,
+    })),
+  },
+  chemistry_homework_1: {
+    title: 'Chemistry Homework 1 Audio Pack',
+    clips: Array.from({ length: 10 }, (_value, index) => ({
+      label: `Problem ${index + 1}`,
+      url: `/assets/tts/chemistry-homework-1/problem-${index + 1}.mp3`,
+    })),
+  },
 }
 
 type ClassroomPoint = readonly [number, number]
@@ -512,28 +569,36 @@ function ClassroomMap({ students, selectedId, onSelect }: { students: Student[];
       const classroom = new Container()
       app.stage.addChild(classroom)
 
-      const [bgTexture, standingTexture, walkLeftTextures, walkRightTextures, workingTextures, researchingTextures, offTaskTextures] = await Promise.all([
+      const [bgTexture, standingTexture, walkLeftTextures, walkRightTextures] = await Promise.all([
         Assets.load('/assets/teacher-classroom-background.png'),
         Assets.load(agentAssetPaths.standing),
         Promise.all(agentAssetPaths.walkLeft.map((path) => Assets.load(path))),
         Promise.all(agentAssetPaths.walkRight.map((path) => Assets.load(path))),
-        Promise.all(agentAssetPaths.working.map((path) => Assets.load(path))),
-        Promise.all(agentAssetPaths.researching.map((path) => Assets.load(path))),
-        Promise.all(agentAssetPaths.offTask.map((path) => Assets.load(path))),
       ])
       const agentTextures: AgentTextures = {
         standing: standingTexture,
         walkLeft: walkLeftTextures,
         walkRight: walkRightTextures,
-        working: workingTextures,
-        researching: researchingTextures,
-        offTask: offTaskTextures,
+        working: [standingTexture],
+        researching: [standingTexture],
+        offTask: [standingTexture],
       }
       const background = new Sprite(bgTexture)
       background.width = sceneWidth
       background.height = sceneHeight
       classroom.addChild(background)
       classroom.addChild(new Graphics().rect(0, 0, sceneWidth, sceneHeight).fill({ color: 0x0d1722, alpha: 0.08 }))
+
+      Promise.all([
+        Promise.all(agentAssetPaths.working.map((path) => Assets.load(path))),
+        Promise.all(agentAssetPaths.researching.map((path) => Assets.load(path))),
+        Promise.all(agentAssetPaths.offTask.map((path) => Assets.load(path))),
+      ]).then(([workingTextures, researchingTextures, offTaskTextures]) => {
+        if (destroyed) return
+        agentTextures.working = workingTextures
+        agentTextures.researching = researchingTextures
+        agentTextures.offTask = offTaskTextures
+      }).catch(() => undefined)
 
       const minderLayer = new Container()
       classroom.addChild(minderLayer)
@@ -861,8 +926,81 @@ function StudentCardsView({ students, onSelect }: { students: Student[]; onSelec
 
 function ExpandedStudentCard({ student, onClose, onOpenClassroom }: { student: Student; onClose: () => void; onOpenClassroom: () => void }) {
   const [activeAssignmentId, setActiveAssignmentId] = useState(student.assignments[0]?.assignment_id ?? '')
+  const [selectedSupport, setSelectedSupport] = useState('')
+  const [supportPreview, setSupportPreview] = useState('')
+  const [supportStage, setSupportStage] = useState<'idle' | 'transforming' | 'review' | 'approved' | 'sending' | 'sent'>('idle')
+  const [supportNotes, setSupportNotes] = useState('')
+  const [deliveredSupport, setDeliveredSupport] = useState('')
+  const [assignmentOpen, setAssignmentOpen] = useState(false)
+  const [supportOpen, setSupportOpen] = useState(false)
   const supportFlags = Object.keys(student.accommodation_flags)
   const activeAssignment = student.assignments.find((assignment) => assignment.assignment_id === activeAssignmentId) ?? student.assignments[0]
+  const activeSupportResult = activeAssignment && selectedSupport
+    ? cachedSupportResults[activeAssignment.assignment_id]?.[selectedSupport]
+    : undefined
+  const activeTtsResult = activeAssignment && selectedSupport === 'text_to_speech'
+    ? cachedTtsResults[activeAssignment.assignment_id]
+    : undefined
+  const deliveredSupportResult = activeAssignment && deliveredSupport
+    ? cachedSupportResults[activeAssignment.assignment_id]?.[deliveredSupport]
+    : undefined
+  const deliveredTtsResult = activeAssignment && deliveredSupport === 'text_to_speech'
+    ? cachedTtsResults[activeAssignment.assignment_id]
+    : undefined
+
+  const loadSupportPreview = useCallback((support: string) => {
+    setSelectedSupport(support)
+    setSupportPreview('')
+    setSupportNotes('')
+    const supportResult = cachedSupportResults[activeAssignment?.assignment_id ?? '']?.[support]
+    const ttsResult = support === 'text_to_speech' ? cachedTtsResults[activeAssignment?.assignment_id ?? ''] : undefined
+    if (!supportResult && !ttsResult) return
+    if (supportResult) setSupportPreview(supportResult.content)
+    setSupportOpen(true)
+    if (ttsResult) {
+      setSupportStage('review')
+    } else {
+      setSupportStage('transforming')
+      window.setTimeout(() => {
+        setSupportStage('review')
+      }, 5000)
+    }
+  }, [activeAssignment?.assignment_id])
+
+  const selectAssignment = useCallback((assignmentId: string) => {
+    setActiveAssignmentId(assignmentId)
+    setSelectedSupport('')
+    setSupportPreview('')
+    setSupportStage('idle')
+    setSupportNotes('')
+    setDeliveredSupport('')
+    setAssignmentOpen(true)
+    setSupportOpen(false)
+  }, [])
+
+  const rejectSupport = useCallback(() => {
+    setSelectedSupport('')
+    setSupportPreview('')
+    setSupportStage('idle')
+    setSupportNotes('')
+    setSupportOpen(false)
+  }, [])
+
+  const sendApprovedSupport = useCallback(() => {
+    if (!selectedSupport) return
+    setSupportStage('sending')
+    window.setTimeout(() => {
+      setDeliveredSupport(selectedSupport)
+      setSupportStage('sent')
+      window.setTimeout(() => {
+        setSelectedSupport('')
+        setSupportPreview('')
+        setSupportNotes('')
+        setSupportStage('idle')
+        setSupportOpen(false)
+      }, 900)
+    }, 2000)
+  }, [selectedSupport])
 
   return (
     <article className={`expanded-student-card alert-${student.alert_level}`}>
@@ -892,7 +1030,7 @@ function ExpandedStudentCard({ student, onClose, onOpenClassroom }: { student: S
               type="button"
               key={assignment.assignment_id}
               className={assignment.assignment_id === activeAssignment?.assignment_id ? 'active-assignment' : ''}
-              onClick={() => setActiveAssignmentId(assignment.assignment_id)}
+              onClick={() => selectAssignment(assignment.assignment_id)}
             >
               <ClipboardList size={15} />
               <span>{assignment.title}</span>
@@ -905,7 +1043,23 @@ function ExpandedStudentCard({ student, onClose, onOpenClassroom }: { student: S
         <h3>Approved Supports</h3>
         <div className="card-supports">
           {supportFlags.length
-            ? supportFlags.map((flag) => <span key={flag}>{flag.replaceAll('_', ' ')}</span>)
+            ? supportFlags.map((flag) => {
+                const hasCachedResult = Boolean(
+                  cachedSupportResults[activeAssignment?.assignment_id ?? '']?.[flag] ||
+                  (flag === 'text_to_speech' && cachedTtsResults[activeAssignment?.assignment_id ?? '']),
+                )
+                return (
+                  <button
+                    type="button"
+                    key={flag}
+                    className={selectedSupport === flag ? 'active-support' : ''}
+                    onClick={() => loadSupportPreview(flag)}
+                  >
+                    {flag.replaceAll('_', ' ')}
+                    {!hasCachedResult && <small>No cached demo result</small>}
+                  </button>
+                )
+              })
             : <span>No simulated support flags</span>}
         </div>
       </section>
@@ -915,16 +1069,213 @@ function ExpandedStudentCard({ student, onClose, onOpenClassroom }: { student: S
           <button type="button" onClick={onOpenClassroom}>Open In Classroom</button>
         </footer>
       )}
+      {activeAssignment && assignmentOpen && (
+        <section className="review-bubble assignment-review-bubble" aria-label={`${activeAssignment.title} assignment preview`}>
+          <button type="button" className="bubble-close" onClick={() => setAssignmentOpen(false)} aria-label="Close assignment preview">
+            <X size={16} />
+          </button>
+          <h3>Assignment Workspace</h3>
+          <strong>{deliveredSupportResult?.title ?? deliveredTtsResult?.title ?? activeAssignment.title}</strong>
+          {deliveredSupportResult
+            ? (
+                <>
+                  <p>Approved accommodated version is ready for this student.</p>
+                  <pre>{deliveredSupportResult.content}</pre>
+                </>
+              )
+            : deliveredTtsResult
+              ? (
+                  <>
+                    <p>Approved text-to-speech audio is attached for this student.</p>
+                    <TtsClipList clips={deliveredTtsResult.clips} />
+                  </>
+                )
+            : (
+                <>
+                  {activeAssignment.description && <p>{activeAssignment.description}</p>}
+                  {activeAssignment.asset_url
+                    ? <img src={activeAssignment.asset_url} alt={`${activeAssignment.title} worksheet`} />
+                    : <p>{activeAssignment.simulated_course} assignment preview unavailable.</p>}
+                </>
+              )}
+        </section>
+      )}
+      {selectedSupport && supportOpen && (
+        <section className={`review-bubble accommodation-review-bubble stage-${supportStage}`}>
+          <button type="button" className="bubble-close" onClick={rejectSupport} aria-label="Close accommodation preview">
+            <X size={16} />
+          </button>
+          <h3>{activeTtsResult ? 'Text-To-Speech Preview' : 'Accommodation Preview'}</h3>
+          <strong>{activeSupportResult?.title ?? activeTtsResult?.title ?? `${selectedSupport.replaceAll('_', ' ')} preview unavailable`}</strong>
+          {activeTtsResult
+            ? (
+                <>
+                  <p>Review the generated audio clips for this assignment.</p>
+                  <TtsClipList clips={activeTtsResult.clips} />
+                  {supportStage === 'review' && (
+                    <>
+                      <label className="support-notes">
+                        Recommend specific changes to the text-to-speech agent
+                        <textarea
+                          value={supportNotes}
+                          onChange={(event) => setSupportNotes(event.target.value)}
+                          placeholder="Example: read problem 3 more slowly, and pause before the final operation."
+                        />
+                      </label>
+                      <div className="review-actions">
+                        <button type="button" onClick={() => setSupportStage('approved')}>Approve Audio</button>
+                        <button type="button" className="reject-action" onClick={rejectSupport}>Reject Audio</button>
+                      </div>
+                    </>
+                  )}
+                  {supportStage === 'approved' && (
+                    <div className="approval-actions">
+                      <p className="approval-note">Approved. Sending is still simulated in this prototype.</p>
+                      <button type="button" onClick={sendApprovedSupport}>Send to Student</button>
+                    </div>
+                  )}
+                  {supportStage === 'sending' && (
+                    <div className="sending-state">
+                      <div className="send-bar" />
+                      <p>Sending text-to-speech audio...</p>
+                    </div>
+                  )}
+                  {supportStage === 'sent' && <p className="approval-note">Sent. Returning to the student bubble.</p>}
+                </>
+              )
+            : activeSupportResult
+            ? (
+                <>
+                  <div className="accommodation-transform">
+                    <div className="original-lesson">
+                      <span>Original Assignment</span>
+                      {activeAssignment?.asset_url
+                        ? <img src={activeAssignment.asset_url} alt={`${activeAssignment.title} original worksheet`} />
+                        : <p>{activeAssignment?.title}</p>}
+                    </div>
+                    <div className="reveal-line" />
+                    <div className="rebuilt-lesson">
+                      <span>Rebuilt Assignment</span>
+                      <pre>{supportPreview}</pre>
+                    </div>
+                  </div>
+                  {supportStage === 'review' && (
+                    <>
+                      <label className="support-notes">
+                        Recommend specific changes to the accommodations agent
+                        <textarea
+                          value={supportNotes}
+                          onChange={(event) => setSupportNotes(event.target.value)}
+                          placeholder="Example: keep the checklist, but reduce repeated directions after problem 3."
+                        />
+                      </label>
+                      <div className="review-actions">
+                        <button type="button" onClick={() => setSupportStage('approved')}>Approve Lesson</button>
+                        <button type="button" className="reject-action" onClick={rejectSupport}>Reject Assignment</button>
+                      </div>
+                    </>
+                  )}
+                  {supportStage === 'approved' && (
+                    <div className="approval-actions">
+                      <p className="approval-note">Approved. Sending is still simulated in this prototype.</p>
+                      <button type="button" onClick={sendApprovedSupport}>Send to Student</button>
+                    </div>
+                  )}
+                  {supportStage === 'sending' && (
+                    <div className="sending-state">
+                      <div className="send-bar" />
+                      <p>Sending accommodated assignment...</p>
+                    </div>
+                  )}
+                  {supportStage === 'sent' && <p className="approval-note">Sent. Returning to the student bubble.</p>}
+                </>
+              )
+            : <p>No cached accommodation result is available for this assignment and support yet.</p>}
+        </section>
+      )}
     </article>
   )
 }
 
 function StudentBubble({ student, onClose }: { student: Student; onClose: () => void }) {
   const [activeAssignmentId, setActiveAssignmentId] = useState(student.assignments[0]?.assignment_id ?? '')
+  const [selectedSupport, setSelectedSupport] = useState('')
+  const [supportPreview, setSupportPreview] = useState('')
+  const [supportStage, setSupportStage] = useState<'idle' | 'transforming' | 'review' | 'approved' | 'sending' | 'sent'>('idle')
+  const [supportNotes, setSupportNotes] = useState('')
+  const [deliveredSupport, setDeliveredSupport] = useState('')
+  const [assignmentOpen, setAssignmentOpen] = useState(false)
+  const [supportOpen, setSupportOpen] = useState(false)
   const events = [...(student.minder_events ?? []), ...(student.tutor_events ?? [])]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 8)
   const activeAssignment = student.assignments.find((assignment) => assignment.assignment_id === activeAssignmentId) ?? student.assignments[0]
+  const activeSupportResult = activeAssignment && selectedSupport
+    ? cachedSupportResults[activeAssignment.assignment_id]?.[selectedSupport]
+    : undefined
+  const activeTtsResult = activeAssignment && selectedSupport === 'text_to_speech'
+    ? cachedTtsResults[activeAssignment.assignment_id]
+    : undefined
+  const deliveredSupportResult = activeAssignment && deliveredSupport
+    ? cachedSupportResults[activeAssignment.assignment_id]?.[deliveredSupport]
+    : undefined
+  const deliveredTtsResult = activeAssignment && deliveredSupport === 'text_to_speech'
+    ? cachedTtsResults[activeAssignment.assignment_id]
+    : undefined
+
+  const loadSupportPreview = useCallback((support: string) => {
+    setSelectedSupport(support)
+    setSupportPreview('')
+    setSupportNotes('')
+    const supportResult = cachedSupportResults[activeAssignment?.assignment_id ?? '']?.[support]
+    const ttsResult = support === 'text_to_speech' ? cachedTtsResults[activeAssignment?.assignment_id ?? ''] : undefined
+    if (!supportResult && !ttsResult) return
+    if (supportResult) setSupportPreview(supportResult.content)
+    setSupportOpen(true)
+    if (ttsResult) {
+      setSupportStage('review')
+    } else {
+      setSupportStage('transforming')
+      window.setTimeout(() => {
+        setSupportStage('review')
+      }, 5000)
+    }
+  }, [activeAssignment?.assignment_id])
+
+  const selectAssignment = useCallback((assignmentId: string) => {
+    setActiveAssignmentId(assignmentId)
+    setSelectedSupport('')
+    setSupportPreview('')
+    setSupportStage('idle')
+    setSupportNotes('')
+    setDeliveredSupport('')
+    setAssignmentOpen(true)
+    setSupportOpen(false)
+  }, [])
+
+  const rejectSupport = useCallback(() => {
+    setSelectedSupport('')
+    setSupportPreview('')
+    setSupportStage('idle')
+    setSupportNotes('')
+    setSupportOpen(false)
+  }, [])
+
+  const sendApprovedSupport = useCallback(() => {
+    if (!selectedSupport) return
+    setSupportStage('sending')
+    window.setTimeout(() => {
+      setDeliveredSupport(selectedSupport)
+      setSupportStage('sent')
+      window.setTimeout(() => {
+        setSelectedSupport('')
+        setSupportPreview('')
+        setSupportNotes('')
+        setSupportStage('idle')
+        setSupportOpen(false)
+      }, 900)
+    }, 2000)
+  }, [selectedSupport])
 
   return (
     <aside className="student-bubble" aria-label={`${student.display_name} student details`}>
@@ -957,7 +1308,7 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
               type="button"
               key={assignment.assignment_id}
               className={assignment.assignment_id === activeAssignment?.assignment_id ? 'active-assignment' : ''}
-              onClick={() => setActiveAssignmentId(assignment.assignment_id)}
+              onClick={() => selectAssignment(assignment.assignment_id)}
             >
               <ClipboardList size={16} />
               <span>{assignment.title}</span>
@@ -967,18 +1318,27 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
           ))}
         </div>
       </section>
-      {activeAssignment && (
-        <section className="assignment-preview">
-          <h3>Assignment Workspace</h3>
-          <strong>{activeAssignment.title}</strong>
-          <p>{activeAssignment.simulated_course} assignment preview unavailable.</p>
-        </section>
-      )}
       <section>
         <h3>Approved Supports</h3>
         <div className="support-list">
           {Object.keys(student.accommodation_flags).length
-            ? Object.keys(student.accommodation_flags).map((flag) => <button type="button" key={flag}>{flag.replaceAll('_', ' ')}</button>)
+            ? Object.keys(student.accommodation_flags).map((flag) => {
+                const hasCachedResult = Boolean(
+                  cachedSupportResults[activeAssignment?.assignment_id ?? '']?.[flag] ||
+                  (flag === 'text_to_speech' && cachedTtsResults[activeAssignment?.assignment_id ?? '']),
+                )
+                return (
+                  <button
+                    type="button"
+                    key={flag}
+                    className={selectedSupport === flag ? 'active-support' : ''}
+                    onClick={() => loadSupportPreview(flag)}
+                  >
+                    {flag.replaceAll('_', ' ')}
+                    {!hasCachedResult && <small>No cached demo result</small>}
+                  </button>
+                )
+              })
             : <span>No simulated support flags</span>}
         </div>
       </section>
@@ -996,7 +1356,146 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
           ))}
         </div>
       </details>
+      {activeAssignment && assignmentOpen && (
+        <section className="review-bubble assignment-review-bubble" aria-label={`${activeAssignment.title} assignment preview`}>
+          <button type="button" className="bubble-close" onClick={() => setAssignmentOpen(false)} aria-label="Close assignment preview">
+            <X size={16} />
+          </button>
+          <h3>Assignment Workspace</h3>
+          <strong>{deliveredSupportResult?.title ?? deliveredTtsResult?.title ?? activeAssignment.title}</strong>
+          {deliveredSupportResult
+            ? (
+                <>
+                  <p>Approved accommodated version is ready for this student.</p>
+                  <pre>{deliveredSupportResult.content}</pre>
+                </>
+              )
+            : deliveredTtsResult
+              ? (
+                  <>
+                    <p>Approved text-to-speech audio is attached for this student.</p>
+                    <TtsClipList clips={deliveredTtsResult.clips} />
+                  </>
+                )
+            : (
+                <>
+                  {activeAssignment.description && <p>{activeAssignment.description}</p>}
+                  {activeAssignment.asset_url
+                    ? <img src={activeAssignment.asset_url} alt={`${activeAssignment.title} worksheet`} />
+                    : <p>{activeAssignment.simulated_course} assignment preview unavailable.</p>}
+                </>
+              )}
+        </section>
+      )}
+      {selectedSupport && supportOpen && (
+        <section className={`review-bubble accommodation-review-bubble stage-${supportStage}`}>
+          <button type="button" className="bubble-close" onClick={rejectSupport} aria-label="Close accommodation preview">
+            <X size={16} />
+          </button>
+          <h3>{activeTtsResult ? 'Text-To-Speech Preview' : 'Accommodation Preview'}</h3>
+          <strong>{activeSupportResult?.title ?? activeTtsResult?.title ?? `${selectedSupport.replaceAll('_', ' ')} preview unavailable`}</strong>
+          {activeTtsResult
+            ? (
+                <>
+                  <p>Review the generated audio clips for this assignment.</p>
+                  <TtsClipList clips={activeTtsResult.clips} />
+                  {supportStage === 'review' && (
+                    <>
+                      <label className="support-notes">
+                        Recommend specific changes to the text-to-speech agent
+                        <textarea
+                          value={supportNotes}
+                          onChange={(event) => setSupportNotes(event.target.value)}
+                          placeholder="Example: read problem 3 more slowly, and pause before the final operation."
+                        />
+                      </label>
+                      <div className="review-actions">
+                        <button type="button" onClick={() => setSupportStage('approved')}>Approve Audio</button>
+                        <button type="button" className="reject-action" onClick={rejectSupport}>Reject Audio</button>
+                      </div>
+                    </>
+                  )}
+                  {supportStage === 'approved' && (
+                    <div className="approval-actions">
+                      <p className="approval-note">Approved. Sending is still simulated in this prototype.</p>
+                      <button type="button" onClick={sendApprovedSupport}>Send to Student</button>
+                    </div>
+                  )}
+                  {supportStage === 'sending' && (
+                    <div className="sending-state">
+                      <div className="send-bar" />
+                      <p>Sending text-to-speech audio...</p>
+                    </div>
+                  )}
+                  {supportStage === 'sent' && <p className="approval-note">Sent. Returning to the student bubble.</p>}
+                </>
+              )
+            : activeSupportResult
+            ? (
+                <>
+                  <div className="accommodation-transform">
+                    <div className="original-lesson">
+                      <span>Original Assignment</span>
+                      {activeAssignment?.asset_url
+                        ? <img src={activeAssignment.asset_url} alt={`${activeAssignment.title} original worksheet`} />
+                        : <p>{activeAssignment?.title}</p>}
+                    </div>
+                    <div className="reveal-line" />
+                    <div className="rebuilt-lesson">
+                      <span>Rebuilt Assignment</span>
+                      <pre>{supportPreview}</pre>
+                    </div>
+                  </div>
+                  {supportStage === 'review' && (
+                    <>
+                      <label className="support-notes">
+                        Recommend specific changes to the accommodations agent
+                        <textarea
+                          value={supportNotes}
+                          onChange={(event) => setSupportNotes(event.target.value)}
+                          placeholder="Example: keep the checklist, but reduce repeated directions after problem 3."
+                        />
+                      </label>
+                      <div className="review-actions">
+                        <button type="button" onClick={() => setSupportStage('approved')}>Approve Lesson</button>
+                        <button type="button" className="reject-action" onClick={rejectSupport}>Reject Assignment</button>
+                      </div>
+                    </>
+                  )}
+                  {supportStage === 'approved' && (
+                    <div className="approval-actions">
+                      <p className="approval-note">Approved. Sending is still simulated in this prototype.</p>
+                      <button type="button" onClick={sendApprovedSupport}>Send to Student</button>
+                    </div>
+                  )}
+                  {supportStage === 'sending' && (
+                    <div className="sending-state">
+                      <div className="send-bar" />
+                      <p>Sending accommodated assignment...</p>
+                    </div>
+                  )}
+                  {supportStage === 'sent' && <p className="approval-note">Sent. Returning to the student bubble.</p>}
+                </>
+              )
+            : <p>No cached accommodation result is available for this assignment and support yet.</p>}
+        </section>
+      )}
     </aside>
+  )
+}
+
+function TtsClipList({ clips }: { clips: TtsClip[] }) {
+  return (
+    <div className="tts-clip-list">
+      {clips.map((clip) => (
+        <article key={clip.url} className="tts-clip">
+          <strong>{clip.label}</strong>
+          <audio controls preload="none" src={clip.url}>
+            <a href={clip.url}>Open audio</a>
+          </audio>
+        </article>
+      ))}
+    </div>
   )
 }
 

@@ -23,6 +23,11 @@ from .simulator_control import SimulatorController
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("sped-support-backend")
 simulator = SimulatorController()
+ASSIGNMENT_ASSETS = {
+    "whale_rider_homework": "/assets/assignments/whale-rider-homework.png",
+    "math_homework_1": "/assets/assignments/math-homework-1.png",
+    "chemistry_homework_1": "/assets/assignments/chemistry-homework-1.png",
+}
 
 
 @asynccontextmanager
@@ -159,6 +164,8 @@ def student_payload(session: Session, student: Student, *, include_events: bool)
             **state.model_dump(mode="json"),
             "title": assignments[state.assignment_id].title if state.assignment_id in assignments else state.assignment_id,
             "simulated_course": assignments[state.assignment_id].simulated_course if state.assignment_id in assignments else "Demo Course",
+            "description": assignments[state.assignment_id].description if state.assignment_id in assignments else "",
+            "asset_url": ASSIGNMENT_ASSETS.get(state.assignment_id),
         }
         for state in assignment_states
     ]
