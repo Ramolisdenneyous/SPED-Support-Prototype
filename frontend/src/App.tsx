@@ -1079,6 +1079,12 @@ function ExpandedStudentCard({ student, onClose, onOpenClassroom }: { student: S
           </button>
           <h3>Assignment Workspace</h3>
           <strong>{deliveredSupportResult?.title ?? deliveredTtsResult?.title ?? activeAssignment.title}</strong>
+          <AssignmentSupportActions
+            supportFlags={supportFlags}
+            assignmentId={activeAssignment.assignment_id}
+            selectedSupport={selectedSupport}
+            onSelectSupport={loadSupportPreview}
+          />
           {deliveredSupportResult
             ? (
                 <>
@@ -1209,6 +1215,7 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
   const [deliveredSupport, setDeliveredSupport] = useState('')
   const [assignmentOpen, setAssignmentOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
+  const supportFlags = Object.keys(student.accommodation_flags)
   const events = [...(student.minder_events ?? []), ...(student.tutor_events ?? [])]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 8)
@@ -1324,8 +1331,8 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
       <section>
         <h3>Approved Supports</h3>
         <div className="support-list">
-          {Object.keys(student.accommodation_flags).length
-            ? Object.keys(student.accommodation_flags).map((flag) => {
+          {supportFlags.length
+            ? supportFlags.map((flag) => {
                 const hasCachedResult = Boolean(
                   cachedSupportResults[activeAssignment?.assignment_id ?? '']?.[flag] ||
                   (flag === 'text_to_speech' && cachedTtsResults[activeAssignment?.assignment_id ?? '']),
@@ -1366,6 +1373,12 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
           </button>
           <h3>Assignment Workspace</h3>
           <strong>{deliveredSupportResult?.title ?? deliveredTtsResult?.title ?? activeAssignment.title}</strong>
+          <AssignmentSupportActions
+            supportFlags={supportFlags}
+            assignmentId={activeAssignment.assignment_id}
+            selectedSupport={selectedSupport}
+            onSelectSupport={loadSupportPreview}
+          />
           {deliveredSupportResult
             ? (
                 <>
@@ -1484,6 +1497,47 @@ function StudentBubble({ student, onClose }: { student: Student; onClose: () => 
         </section>
       )}
     </aside>
+  )
+}
+
+function AssignmentSupportActions({
+  supportFlags,
+  assignmentId,
+  selectedSupport,
+  onSelectSupport,
+}: {
+  supportFlags: string[]
+  assignmentId: string
+  selectedSupport: string
+  onSelectSupport: (support: string) => void
+}) {
+  if (!supportFlags.length) {
+    return <p className="assignment-support-empty">No approved supports for this student.</p>
+  }
+
+  return (
+    <div className="assignment-support-actions" aria-label="Apply approved support">
+      <span>Apply approved support</span>
+      <div>
+        {supportFlags.map((flag) => {
+          const hasCachedResult = Boolean(
+            cachedSupportResults[assignmentId]?.[flag] ||
+            (flag === 'text_to_speech' && cachedTtsResults[assignmentId]),
+          )
+          return (
+            <button
+              type="button"
+              key={flag}
+              className={selectedSupport === flag ? 'active-support' : ''}
+              onClick={() => onSelectSupport(flag)}
+            >
+              {flag.replaceAll('_', ' ')}
+              {!hasCachedResult && <small>No cached demo result</small>}
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

@@ -770,6 +770,60 @@ progress::-webkit-progress-value {
   font-size: 14px;
 }
 
+.assignment-support-actions {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid #c9dce7;
+  border-radius: 8px;
+  background: #eef8fc;
+}
+
+.assignment-support-actions > span,
+.assignment-support-empty {
+  color: #405a70;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.assignment-support-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.assignment-support-actions button {
+  display: grid;
+  gap: 2px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #a9c9da;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #173142;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: left;
+  text-transform: capitalize;
+}
+
+.assignment-support-actions button:hover,
+.assignment-support-actions button.active-support {
+  border-color: #73aeca;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(40, 69, 90, 0.1);
+}
+
+.assignment-support-actions button small {
+  color: #7b8fa0;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: none;
+}
+
 .review-bubble img {
   display: block;
   width: 100%;
@@ -1314,6 +1368,34 @@ progress::-webkit-progress-value {
     width: auto;
   }
 
+  .assignment-review-bubble {
+    inset: 0;
+    max-height: none;
+    padding: 12px;
+    border-radius: 0;
+  }
+
+  .assignment-review-bubble img,
+  .assignment-review-bubble pre {
+    max-height: none;
+  }
+
+  .assignment-support-actions {
+    position: sticky;
+    top: -12px;
+    z-index: 2;
+    margin-inline: -4px;
+  }
+
+  .assignment-support-actions > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .assignment-support-actions button {
+    flex: 0 0 auto;
+  }
+
   .assignment-review-bubble::before,
   .accommodation-review-bubble::before {
     display: none;
@@ -1421,5 +1503,10 @@ progress::-webkit-progress-value {
   .assignment-review-bubble,
   .accommodation-review-bubble {
     inset: 8px;
+  }
+
+  .assignment-review-bubble {
+    inset: 0;
+    border-radius: 0;
   }
 }
